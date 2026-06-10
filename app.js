@@ -263,50 +263,76 @@ function maakNieuwPlannerItem(id, tekst, dagNaam, persoon, kleur, vanTijd, totTi
     dagLijst.appendChild(taakElement);
 }
 
-// Invoeren nieuwe taak
+// Invoeren nieuwe taak (Nu met wekelijkse herhaling!)
 plannerKnop.addEventListener('click', function() {
     const tekst = taakInput.value.trim();
-    const gekozenDatum = datumInput.value; 
+    const gekozenDatumString = datumInput.value; 
     const persoon = persoonSelect.value;
     const vanTijd = tijdInput.value;
     const totTijd = eindTijdInput.value;
     const kleur = kleurMappen[persoon] || '#777777';
+    const moetHerhalen = document.getElementById('herhaalCheckbox').checked; // NIEUW
 
-    if (tekst === "" || gekozenDatum === "") {
+    if (tekst === "" || gekozenDatumString === "") {
         alert("Vul een taak in én kies een datum!");
         return;
     }
 
+    // Array om alle rijen in te verzamelen die we gaan opslaan
+    let takenOmOpTeSlaan = [];
+    
+    // We bepalen hoeveel weken we vooruit schrijven (1 eenmalig, of 12 weken bij herhaling)
+    const aantalWeken = moetHerhalen ? 12 : 1;
+    
+    let basisDatum = new Date(gekozenDatumString);
     const dagenNamen = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
-    const dagNaam = dagenNamen[new Date(gekozenDatum).getDay()];
 
+    for (let i = 0; i < aantalWeken; i++) {
+        // Formateer de datum netjes als JJJJ-MM-DD voor Supabase
+        const jaar = basisDatum.getFullYear();
+        const maand = String(basisDatum.getMonth() + 1).padStart(2, '0');
+        const dagNr = String(basisDatum.getDate()).padStart(2, '0');
+        const loopDatumString = `${jaar}-${maand}-${dagNr}`;
+        
+        // Bepaal de dagnaam (maandag, dinsdag, etc.)
+        const dagNaam = dagenNamen[basisDatum.getDay()];
+
+        // Voeg dit item toe aan onze verzamellijst
+        takenOmOpTeSlaan.push({
+            tekst: tekst,
+            datum: loopDatumString,
+            dag: dagNaam,
+            persoon: persoon,
+            kleur: kleur,
+            tijd: vanTijd,
+            eindtijd: totTijd
+        });
+
+        // Belangrijk: Tel 7 dagen op bij de datum voor de volgende ronde in de loop!
+        basisDatum.setDate(basisDatum.getDate() + 7);
+    }
+
+    // Stuur de hele lijst in één keer (bulk-insert) naar Supabase!
     supabaseClient
         .from('planner')
-        .insert([{ tekst: tekst, datum: gekozenDatum, dag: dagNaam, persoon: persoon, kleur: kleur, tijd: vanTijd, eindtijd: totTijd }])
+        .insert(takenOmOpTeSlaan)
         .select()
         .then(result => {
-            if (result.error) console.error(result.error);
-            else {
-                const n = result.data[0];
-                if (n.datum >= weekDatums['maandag'] && n.datum <= weekDatums['zondag']) {
-                    maakNieuwPlannerItem(n.id, n.tekst, dagNaam, n.persoon, n.kleur, n.tijd, n.eindtijd, n.datum);
-                }
+            if (result.error) {
+                console.error("Fout bij opslaan herhalende taak:", result.error);
+                alert("Er ging iets mis bij het opslaan.");
+            } else {
+                // Herlaad de planner op het scherm, zodat de taak direct zichtbaar is 
+                // als de gekozen datum in de huidige week viel
+                laadPlannerUitCloud();
+                
+                // Formulier leegmaken en checkbox resetten
                 taakInput.value = "";
                 tijdInput.value = "";
                 eindTijdInput.value = "";
+                document.getElementById('herhaalCheckbox').checked = false;
             }
         });
-});
-
-// Bladeren door weken
-vorigeWeekKnop.addEventListener('click', function() {
-    huidigeMaandag.setDate(huidigeMaandag.getDate() - 7);
-    laadPlannerUitCloud();
-});
-
-volgendeWeekKnop.addEventListener('click', function() {
-    huidigeMaandag.setDate(huidigeMaandag.getDate() + 7);
-    laadPlannerUitCloud();
 });
 
 // NIEUW: Klikken in de week-container (Wissen óf Bewerken openen)
