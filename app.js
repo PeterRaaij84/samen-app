@@ -436,7 +436,8 @@ laadVensterbankUitCloud();
 // CODE VOOR DE LIVE PLANTEN-API & VENSTERBANK
 // ==========================================
 
-const PLANT_API_KEY = 'sk-QwoW6a296461437b218093'; // Jouw Perenual sleutel
+// 1. Vul hier je Perenual sleutel in (begint met sk-)
+const PLANT_API_KEY = 'sk-QwoW6a296461437b218093'; 
 
 const plantZoekInput = document.getElementById('plantZoekInput');
 const zoekPlantKnop = document.getElementById('zoekPlantKnop');
@@ -447,24 +448,24 @@ const plantZonInfo = document.getElementById('plantZonInfo');
 const opslaanPlantKnop = document.getElementById('opslaanPlantKnop');
 const vensterbankLijst = document.getElementById('vensterbankLijst');
 
-// Globale variabelen om de data van de momenteel gezochte plant tijdelijk vast te houden
 let tijdelijkePlantData = null;
-let vensterbankTimers = {}; // Object om alle lopende klokjes per plant in te bewaren
+let vensterbankTimers = {}; 
 
-/ 1. Zoeken naar een plant via de API (Geoptimaliseerd voor het gratis abonnement!)
+// Zoeken naar een plant via de API (Geoptimaliseerde single-request versie)
 zoekPlantKnop.addEventListener('click', async function() {
     const zoekTerm = plantZoekInput.value.trim().toLowerCase();
-    if (zoekTerm === "") return alert("Typ eerst een plantennaam in!");
+    if (zoekTerm === "") {
+        alert("Typ eerst een plantennaam in!");
+        return;
+    }
 
     zoekPlantKnop.textContent = "Zoeken... 🪴";
     zoekPlantKnop.disabled = true;
 
     try {
-        // We doen nu nog maar 1 verzoek in plaats van 2 achter elkaar!
         const zoekUrl = `https://perenual.com/api/species-list?key=${PLANT_API_KEY}&q=${zoekTerm}`;
         const antwoord = await fetch(zoekUrl);
         
-        // Als we een 429 fout krijgen, vangen we dat nu netjes op met een duidelijke melding
         if (antwoord.status === 429) {
             alert("De planten-database is even overprikkeld (Limiet bereikt). Wacht een minuutje en probeer het nog eens!");
             return;
@@ -477,18 +478,14 @@ zoekPlantKnop.addEventListener('click', async function() {
             return;
         }
 
-        // We pakken de data direct uit de eerste zoeklijst, hier zit al genoeg in!
         const gevondenPlant = resultaat.data[0];
 
         plantResultaatDiv.style.display = 'block';
         const naamMooi = gevondenPlant.common_name ? gevondenPlant.common_name.toUpperCase() : zoekTerm;
         plantNaam.textContent = naamMooi;
 
-        // Waterbehoefte zit gelukkig ook in deze kortere lijst
         const waterBehoefte = gevondenPlant.watering || "Average";
         plantWaterInfo.textContent = vertaalWaterbehoefte(waterBehoefte);
-        
-        // Zonlichtgegevens
         plantZonInfo.textContent = (gevondenPlant.sunlight || ["Halfschaduw"]).join(', ');
 
         let waterDagen = 7;
@@ -496,7 +493,6 @@ zoekPlantKnop.addEventListener('click', async function() {
         if (waterBehoefte.toLowerCase().includes('average')) waterDagen = 7;
         if (waterBehoefte.toLowerCase().includes('minimum')) waterDagen = 14;
 
-        // Sla de gegevens op voor de opslaan-knop
         tijdelijkePlantData = { naam: naamMooi, water_dagen: waterDagen };
 
     } catch (fout) {
@@ -516,11 +512,11 @@ function vertaalWaterbehoefte(terme) {
     return terme;
 }
 
-// 2. Klikken op de knop "Toevoegen aan mijn vensterbank"
+// Klikken op de knop "Toevoegen aan mijn vensterbank"
 opslaanPlantKnop.addEventListener('click', function() {
     if (!tijdelijkePlantData) return;
 
-    const vandaagString = new Date().toISOString().split('T')[0]; // Geeft de datum van vandaag: JJJJ-MM-DD
+    const vandaagString = new Date().toISOString().split('T')[0]; 
 
     supabaseClient
         .from('mijn_planten')
@@ -531,19 +527,19 @@ opslaanPlantKnop.addEventListener('click', function() {
         }])
         .select()
         .then(result => {
-            if (result.error) console.error(result.error);
-            else {
+            if (result.error) {
+                console.error(result.error);
+            } else {
                 plantResultaatDiv.style.display = 'none';
                 plantZoekInput.value = "";
                 tijdelijkePlantData = null;
-                laadVensterbankUitCloud(); // Vernieuw de vensterbank direct
+                laadVensterbankUitCloud(); 
             }
         });
 });
 
-// 3. Haal de opgeslagen planten op uit de cloud
+// Haal de opgeslagen planten op uit de cloud
 async function laadVensterbankUitCloud() {
-    // Wis eerst alle lopende timers om dubbele klokken te voorkomen
     Object.values(vensterbankTimers).forEach(t => clearInterval(t));
     vensterbankTimers = {};
     vensterbankLijst.innerHTML = "";
@@ -565,7 +561,7 @@ async function laadVensterbankUitCloud() {
     }
 }
 
-// 4. Bouw een visueel kaartje voor de vensterbank
+// Bouw een visueel kaartje voor de vensterbank
 function maakVensterbankCard(id, naam, waterDagen, laatstWaterString) {
     const card = document.createElement('div');
     card.className = 'plant-badge';
@@ -587,12 +583,10 @@ function maakVensterbankCard(id, naam, waterDagen, laatstWaterString) {
 
     vensterbankLijst.appendChild(card);
 
-    // Berekening voor de aftelklok van deze specifieke plant
     const klokVlak = card.querySelector('.aftel-klok');
     const laatstWaterTijd = new Date(laatstWaterString).getTime();
     const doelTijd = laatstWaterTijd + (waterDagen * 24 * 60 * 60 * 1000);
 
-    // Start een interval die specifiek voor dit kaartje elke seconde tikt
     vensterbankTimers[id] = setInterval(function() {
         const nu = new Date().getTime();
         const afstand = doelTijd - nu;
@@ -611,13 +605,12 @@ function maakVensterbankCard(id, naam, waterDagen, laatstWaterString) {
     }, 1000);
 }
 
-// 5. Knoppen op de kaarten bedienen (Water geven of Plant weggooien)
+// Knoppen op de kaarten bedienen (Water geven of Plant weggooien)
 vensterbankLijst.addEventListener('click', async function(event) {
     const card = event.target.closest('.plant-badge');
     if (!card) return;
     const id = card.getAttribute('data-id');
 
-    // SITUATIE A: Plant heeft water gehad (Reset de datum naar VANDAAG)
     if (event.target.classList.contains('water-geef-btn')) {
         const vandaagString = new Date().toISOString().split('T')[0];
         const { error } = await supabaseClient
@@ -625,10 +618,9 @@ vensterbankLijst.addEventListener('click', async function(event) {
             .update({ laatst_water: vandaagString })
             .eq('id', id);
 
-        if (!error) laadVensterbankUitCloud(); // Herbereken de klokken direct
+        if (!error) laadVensterbankUitCloud(); 
     }
 
-    // SITUATIE B: Plant is helaas overleden of weg (Verwijderen uit de database)
     if (event.target.classList.contains('plant-wis-btn')) {
         const { error } = await supabaseClient
             .from('mijn_planten')
@@ -642,11 +634,10 @@ vensterbankLijst.addEventListener('click', async function(event) {
     }
 });
 
-// 6. REALTIME SYNCHRONISATIE VOOR DE VENSTERBANK
+// REALTIME SYNCHRONISATIE VOOR DE VENSTERBANK
 supabaseClient
     .channel('vensterbank-wijzigingen')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'mijn_planten' }, (payload) => {
-        // Bij updates of nieuwe planten laden we de lijst even fris in
         if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             laadVensterbankUitCloud();
         }
