@@ -436,7 +436,7 @@ laadPlannerUitCloud();
 // ==========================================
 
 // 1. JOUW PERENUAL API SLEUTEL (Plak hier jouw ontvangen sleutel tussen de aanhalingstekens)
-const PLANT_API_KEY = 'ZET_HIER_JOUW_ONTVANGEN_API_KEY'; 
+const PLANT_API_KEY = 'sk-QwoW6a296461437b218093'; 
 
 // 2. HTML-elementen oppakken
 const plantZoekInput = document.getElementById('plantZoekInput');
