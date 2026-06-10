@@ -429,132 +429,226 @@ supabaseClient
 // ==========================================
 laadBoodschappenUitCloud();
 laadPlannerUitCloud();
+laadVensterbankUitCloud();
 
 
 // ==========================================
-// CODE VOOR DE LIVE PLANTEN-API & AFTELKLOK
+// CODE VOOR DE LIVE PLANTEN-API & VENSTERBANK
 // ==========================================
 
-// 1. JOUW PERENUAL API SLEUTEL (Plak hier jouw ontvangen sleutel tussen de aanhalingstekens)
-const PLANT_API_KEY = 'sk-QwoW6a296461437b218093'; 
+const PLANT_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsdnlqbXVjem9ybW91c3p0cGl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTA4OTAsImV4cCI6MjA5NjU4Njg5MH0.aJUpJaxO77pZxy9nLXt9iX6R_DZtUcwNer0pGbe2YZs'; // Jouw Perenual sleutel
 
-// 2. HTML-elementen oppakken
 const plantZoekInput = document.getElementById('plantZoekInput');
 const zoekPlantKnop = document.getElementById('zoekPlantKnop');
 const plantResultaatDiv = document.getElementById('plantResultaat');
 const plantNaam = document.getElementById('plantNaam');
 const plantWaterInfo = document.getElementById('plantWaterInfo');
 const plantZonInfo = document.getElementById('plantZonInfo');
-const waterAftelKlok = document.getElementById('waterAftelKlok');
-let timerInterval; 
+const opslaanPlantKnop = document.getElementById('opslaanPlantKnop');
+const vensterbankLijst = document.getElementById('vensterbankLijst');
 
-// 3. Luisteren naar de "Plant zoeken" knop
+// Globale variabelen om de data van de momenteel gezochte plant tijdelijk vast te houden
+let tijdelijkePlantData = null;
+let vensterbankTimers = {}; // Object om alle lopende klokjes per plant in te bewaren
+
+// 1. Zoeken naar een plant via de API
 zoekPlantKnop.addEventListener('click', async function() {
     const zoekTerm = plantZoekInput.value.trim().toLowerCase();
-
-    if (zoekTerm === "") {
-        alert("Typ eerst een plantennaam in!");
-        return;
-    }
+    if (zoekTerm === "") return alert("Typ eerst een plantennaam in!");
 
     zoekPlantKnop.textContent = "Zoeken... 🪴";
     zoekPlantKnop.disabled = true;
 
     try {
-        // STAP A: Zoek de plant op naam in de database van Perenual
         const zoekUrl = `https://perenual.com/api/species-list?key=${PLANT_API_KEY}&q=${zoekTerm}`;
         const antwoord = await fetch(zoekUrl);
         const resultaat = await antwoord.json();
 
-        // Controleren of er wel een plant is gevonden
         if (!resultaat.data || resultaat.data.length === 0) {
-            alert(`Geen plant gevonden voor '${zoekTerm}'. Probeer de Engelse of Latijnse naam (bijv. 'Snake plant' of 'Ficus')!`);
-            resethandlerKnop();
+            alert(`Geen plant gevonden voor '${zoekTerm}'. Probeer het in het Engels!`);
             return;
         }
 
-        // Pak de allereerste plant uit de zoekresultaten
-        const gevondenPlant = resultaat.data[0];
-        const plantId = gevondenPlant.id;
-
-        // STAP B: Haal de specifieke verzorgingsdetails op met het unieke Plant ID
+        const plantId = resultaat.data[0].id;
         const detailUrl = `https://perenual.com/api/species/details/${plantId}?key=${PLANT_API_KEY}`;
         const detailAntwoord = await fetch(detailUrl);
         const plantDetails = await detailAntwoord.json();
 
-        // Toon de resultaten-div op het scherm
         plantResultaatDiv.style.display = 'block';
+        const naamMooi = plantDetails.common_name ? plantDetails.common_name.toUpperCase() : zoekTerm;
+        plantNaam.textContent = naamMooi;
 
-        // Vul de HTML met de live data uit de API
-        plantNaam.textContent = plantDetails.common_name ? plantDetails.common_name.toUpperCase() : zoekTerm;
-        
-        // Waterbehoefte vertalen of netjes tonen
-        const waterBehoefte = plantDetails.watering || "Regelmatig";
+        const waterBehoefte = plantDetails.watering || "Average";
         plantWaterInfo.textContent = vertaalWaterbehoefte(waterBehoefte);
+        plantZonInfo.textContent = (plantDetails.sunlight || ["Halfschaduw"]).join(', ');
 
-        // Zonlichtgegevens netjes combineren (vaak een lijstje)
-        const zonLijst = plantDetails.sunlight || ["Halfschaduw"];
-        plantZonInfo.textContent = zonLijst.join(', ');
-
-        // Bepaal de watercyclus in dagen op basis van de API-data (met een veilige fallback)
         let waterDagen = 7;
         if (waterBehoefte.toLowerCase().includes('frequent')) waterDagen = 3;
         if (waterBehoefte.toLowerCase().includes('average')) waterDagen = 7;
         if (waterBehoefte.toLowerCase().includes('minimum')) waterDagen = 14;
 
-        // Start de live aftelklok!
-        startWaterTimer(waterDagen);
+        // Sla de gegevens even op in het geheugen voor als men strakjes op 'opslaan' klikt
+        tijdelijkePlantData = { naam: naamMooi, water_dagen: waterDagen };
 
     } catch (fout) {
-        console.error("Er ging iets mis met de Planten-API:", fout);
-        alert("Kon de plantengegevens niet ophalen. Controleer je internetverbinding of API key.");
+        console.error(fout);
+        alert("Fout bij ophalen plantendata.");
     } finally {
-        resethandlerKnop();
+        zoekPlantKnop.textContent = "Plant zoeken";
+        zoekPlantKnop.disabled = false;
     }
 });
 
-// Hulpfunctie om de knop weer normaal te maken
-function resethandlerKnop() {
-    zoekPlantKnop.textContent = "Plant zoeken";
-    zoekPlantKnop.disabled = false;
-}
-
-// Hulpfunctie om de Engelse termen van de API een beetje leuk te vertalen
 function vertaalWaterbehoefte(terme) {
     const t = terme.toLowerCase();
     if (t.includes('frequent')) return "Veel water (1x per 3 à 4 dagen)";
     if (t.includes('average')) return "Gemiddeld (1x per 7 dagen)";
     if (t.includes('minimum')) return "Weinig water (1x per 14 dagen)";
-    return terme; // Fallback als het iets anders is
+    return terme;
 }
 
-// 4. FUNCTIE: De Aftelklok (Blijft ongewijzigd, maar nu gekoppeld aan de API!)
-function startWaterTimer(dagen) {
-    clearInterval(timerInterval);
-    const doelTijd = new Date().getTime() + (dagen * 24 * 60 * 60 * 1000);
+// 2. Klikken op de knop "Toevoegen aan mijn vensterbank"
+opslaanPlantKnop.addEventListener('click', function() {
+    if (!tijdelijkePlantData) return;
 
-    timerInterval = setInterval(function() {
+    const vandaagString = new Date().toISOString().split('T')[0]; // Geeft de datum van vandaag: JJJJ-MM-DD
+
+    supabaseClient
+        .from('mijn_planten')
+        .insert([{
+            naam: tijdelijkePlantData.naam,
+            water_dagen: tijdelijkePlantData.water_dagen,
+            laatst_water: vandaagString
+        }])
+        .select()
+        .then(result => {
+            if (result.error) console.error(result.error);
+            else {
+                plantResultaatDiv.style.display = 'none';
+                plantZoekInput.value = "";
+                tijdelijkePlantData = null;
+                laadVensterbankUitCloud(); // Vernieuw de vensterbank direct
+            }
+        });
+});
+
+// 3. Haal de opgeslagen planten op uit de cloud
+async function laadVensterbankUitCloud() {
+    // Wis eerst alle lopende timers om dubbele klokken te voorkomen
+    Object.values(vensterbankTimers).forEach(t => clearInterval(t));
+    vensterbankTimers = {};
+    vensterbankLijst.innerHTML = "";
+
+    const { data, error } = await supabaseClient
+        .from('mijn_planten')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    if (data) {
+        data.forEach(plant => {
+            maakVensterbankCard(plant.id, plant.naam, plant.water_dagen, plant.laatst_water);
+        });
+    }
+}
+
+// 4. Bouw een visueel kaartje voor de vensterbank
+function maakVensterbankCard(id, naam, waterDagen, laatstWaterString) {
+    const card = document.createElement('div');
+    card.className = 'plant-badge';
+    card.style.background = 'white';
+    card.style.position = 'relative';
+    card.setAttribute('data-id', id);
+
+    card.innerHTML = `
+        <h4 style="color: #1e293b; margin-bottom: 5px;">${naam}</h4>
+        <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 10px;">Cyclus: elke ${waterDagen} dagen</div>
+        <div style="font-size: 0.9rem; margin-bottom: 15px;">
+            💧 Gietklok: <span class="aftel-klok" style="font-weight: bold; font-family: monospace;">Berekenen...</span>
+        </div>
+        <div style="display: flex; gap: 5px;">
+            <button class="water-geef-btn" style="background-color: #3b82f6; padding: 6px 12px; font-size: 0.85rem; flex: 1;">Give water 💧</button>
+            <button class="plant-wis-btn" style="background-color: transparent; color: #94a3b8; padding: 6px; font-size: 0.85rem;">🗑️</button>
+        </div>
+    `;
+
+    vensterbankLijst.appendChild(card);
+
+    // Berekening voor de aftelklok van deze specifieke plant
+    const klokVlak = card.querySelector('.aftel-klok');
+    const laatstWaterTijd = new Date(laatstWaterString).getTime();
+    const doelTijd = laatstWaterTijd + (waterDagen * 24 * 60 * 60 * 1000);
+
+    // Start een interval die specifiek voor dit kaartje elke seconde tikt
+    vensterbankTimers[id] = setInterval(function() {
         const nu = new Date().getTime();
         const afstand = doelTijd - nu;
 
         const d = Math.floor(afstand / (1000 * 60 * 60 * 24));
         const u = Math.floor((afstand % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const m = Math.floor((afstand % (1000 * 60 * 60)) / (1000 * 60));
-        const s = Math.floor((afstand % (1000 * 60)) / 1000);
-
-        waterAftelKlok.textContent = d + "d " + u + "u " + m + "m " + s + "s ";
-        waterAftelKlok.style.color = "black";
-        waterAftelKlok.style.fontWeight = "normal";
 
         if (afstand < 0) {
-            clearInterval(timerInterval);
-            waterAftelKlok.textContent = "🚨 GEEF WATER!";
-            waterAftelKlok.style.color = "red";
-            waterAftelKlok.style.fontWeight = "bold";
+            klokVlak.textContent = "🚨 GEEF WATER!";
+            klokVlak.style.color = '#ef4444';
+        } else {
+            klokVlak.textContent = `${d}d ${u}u ${m}m`;
+            klokVlak.style.color = '#166534';
         }
     }, 1000);
 }
 
+// 5. Knoppen op de kaarten bedienen (Water geven of Plant weggooien)
+vensterbankLijst.addEventListener('click', async function(event) {
+    const card = event.target.closest('.plant-badge');
+    if (!card) return;
+    const id = card.getAttribute('data-id');
+
+    // SITUATIE A: Plant heeft water gehad (Reset de datum naar VANDAAG)
+    if (event.target.classList.contains('water-geef-btn')) {
+        const vandaagString = new Date().toISOString().split('T')[0];
+        const { error } = await supabaseClient
+            .from('mijn_planten')
+            .update({ laatst_water: vandaagString })
+            .eq('id', id);
+
+        if (!error) laadVensterbankUitCloud(); // Herbereken de klokken direct
+    }
+
+    // SITUATIE B: Plant is helaas overleden of weg (Verwijderen uit de database)
+    if (event.target.classList.contains('plant-wis-btn')) {
+        const { error } = await supabaseClient
+            .from('mijn_planten')
+            .delete()
+            .eq('id', id);
+
+        if (!error) {
+            clearInterval(vensterbankTimers[id]);
+            card.remove();
+        }
+    }
+});
+
+// 6. REALTIME SYNCHRONISATIE VOOR DE VENSTERBANK
+supabaseClient
+    .channel('vensterbank-wijzigingen')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'mijn_planten' }, (payload) => {
+        // Bij updates of nieuwe planten laden we de lijst even fris in
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            laadVensterbankUitCloud();
+        }
+        if (payload.eventType === 'DELETE') {
+            const schermItem = document.querySelector(`.plant-badge[data-id="${payload.old.id}"]`);
+            if (schermItem) {
+                clearInterval(vensterbankTimers[payload.old.id]);
+                schermItem.remove();
+            }
+        }
+    }).subscribe();
 
 // ==========================================
 // CODE VOOR HET MOODBOARD (LOKALE PREVIEW)

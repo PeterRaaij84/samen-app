@@ -266,13 +266,14 @@
             </div>
         </div>
 
+<div class="card">
             <h2>🪴 Mijn Huisplanten</h2>
             <div class="input-groep">
-                <input type="text" id="plantZoekInput" placeholder="Bijv. Monstera, Cactus, Ficus...">
+                <input type="text" id="plantZoekInput" placeholder="Bijv. Monstera, Pilea, Ficus...">
                 <button id="zoekPlantKnop">Plant zoeken</button>
             </div>
 
-            <div id="plantResultaat" style="margin-top: 20px; background-color: #f8fafc; padding: 20px; border-radius: 12px; display: none;">
+            <div id="plantResultaat" style="margin-top: 20px; background-color: #f8fafc; padding: 20px; border-radius: 12px; display: none; border: 1px solid #e2e8f0;">
                 <h3 id="plantNaam" style="color: #0f172a; margin-bottom: 15px;">Plantnaam</h3>
                 
                 <div class="plant-info-grid">
@@ -282,15 +283,15 @@
                     <div class="plant-badge">
                         <span style="font-size: 1.2rem;">☀️</span> <strong>Zonlicht:</strong> <br><span id="plantZonInfo" style="color: #475569;">-</span>
                     </div>
-                    <div class="plant-badge" style="background-color: #f0fdf4; border-color: #bbf7d0;">
-                        <span style="font-size: 1.2rem;">⏱️</span> <strong style="color: #166534;">Volgende beurt:</strong> <br>
-                        <span id="waterAftelKlok" style="font-family: monospace; font-weight: bold; color: #166534;">00d 00u 00m 00s</span>
-                    </div>
                 </div>
-            </div>
-        </div>
 
-    </div>
+                <button id="opslaanPlantKnop" style="background-color: #10b981; width: 100%; margin-top: 15px;">＋ Toevoegen aan mijn vensterbank</button>
+            </div>
+
+            <h3 style="margin-top: 30px; margin-bottom: 15px; color: #1e293b; font-size: 1.2rem;">🏠 Mijn Vensterbank</h3>
+            <div id="vensterbankLijst" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                </div>
+        </div>
 
    <div class="card">
             <h2>🖼️ Huis & Tuin Moodboard</h2>
