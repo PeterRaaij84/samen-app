@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>De Samen App</title>
+    <style>
+        /* --- BASIS STYLING --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #e2e8f0;
+            margin: 40px 0;
+        }
+
+        /* --- FORMULIEREN & INPUTS --- */
+        .input-groep {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        input[type="text"], input[type="time"], select {
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: #3b82f6;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+
+        /* --- DASHBOARD LAYOUT & CARDS --- */
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            margin-bottom: 30px;
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            color: #1e293b;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- BOODSCHAPPENLIJST STYLING --- */
+        #boodschappenLijst {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        #boodschappenLijst li {
+            background: #f8fafc;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.05rem;
+            transition: all 0.2s;
+        }
+
+        /* --- WEEKPLANNER COLUMNS --- */
+        .week-container {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 15px;
+            scroll-snap-type: x mandatory;
+        }
+
+        .dag-kolom {
+            flex: 1;
+            min-width: 280px;
+            background-color: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            scroll-snap-align: start;
+        }
+
+        .dag-kolom h3 {
+            font-size: 1.1rem;
+            color: #334155;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: capitalize;
+        }
+
+        .taak-lijst {
+            list-style: none;
+        }
+
+        .taak-lijst li {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Kleine knopjes in de lijsten */
+        li button {
+            padding: 4px 8px;
+            font-size: 0.85rem;
+            background: transparent;
+            color: #94a3b8;
+        }
+        li button:hover {
+            background: #f1f5f9;
+            color: #ef4444;
+        }
+
+        /* --- PLANTEN SECTIE --- */
+        #plantResultaat {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid #e2e8f0;
+        }
+
+        .plant-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .plant-badge {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <header>
+            <h1>De Samen App 🏠</h1>
+            <p>Het centrale dashboard voor huishouden & familie</p>
+        </header>
+
+        <div class="card">
+            <h2>🛒 Boodschappenlijst</h2>
+            <div class="input-groep">
+                <input type="text" id="boodschapInput" placeholder="Bijv. Melk, brood, eieren...">
+                <button id="voegToeKnop">Voeg toe</button>
+            </div>
+            <ul id="boodschappenLijst"></ul>
+        </div>
+
+    <div class="card">
+            <h2>📅 Familie Kalender & Planner</h2>
+            <div class="input-groep">
+                <input type="text" id="taakInput" placeholder="Bijv. Fysio, Tandarts, Wedstrijd Vets-2...">
+                <input type="time" id="tijdInput">
+                <span style="align-self: center; color: #64748b;">tot</span>
+                <input type="time" id="eindTijdInput">
+                
+                <input type="date" id="datumInput">
+
+                <select id="persoonSelect">
+                    <option value="Algemeen">👥 Hele gezin</option>
+                    <option value="Peter">👨 Peter</option>
+                    <option value="Amy">👩 Amy</option>
+                    <option value="Alysha">👧 Alysha</option>
+                    <option value="Ruben">👦 Ruben</option>
+                </select>
+                
+                <button id="voegTaakToeKnop">In agenda zetten</button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #e2e8f0; padding: 10px 20px; border-radius: 8px;">
+                <button id="vorigeWeekKnop" style="background-color: #64748b; padding: 6px 12px; font-size: 0.9rem;">< Volige Week</button>
+                <h3 id="weekTitel" style="color: #1e293b; font-size: 1.1rem;">Weekoverzicht</h3>
+                <button id="volgendeWeekKnop" style="background-color: #64748b; padding: 6px 12px; font-size: 0.9rem;">Volgende Week ></button>
+            </div>
+
+            <div class="week-container">
+                <div class="dag-kolom"><h3 id="kop-maandag">Maandag</h3><ul id="lijst-maandag" class="taak-lijst"></ul></div>
+                <div class="dag-kolom"><h3 id="kop-dinsdag">Dinsdag</h3><ul id="lijst-dinsdag" class="taak-lijst"></ul></div>
+                <div class="dag-kolom"><h3 id="kop-woensdag">Woensdag</h3><ul id="lijst-woensdag" class="taak-lijst"></ul></div>
+                <div class="dag-kolom"><h3 id="kop-donderdag">Donderdag</h3><ul id="lijst-donderdag" class="taak-lijst"></ul></div>
+                <div class="dag-kolom"><h3 id="kop-vrijdag">Vrijdag</h3><ul id="lijst-vrijdag" class="taak-lijst"></ul></div>
+                <div class="dag-kolom"><h3 id="kop-zaterdag">Zaterdag</h3><ul id="lijst-zaterdag" class="taak-lijst"></ul></div>
+                <div class="dag-kolom"><h3 id="kop-zondag">Zondag</h3><ul id="lijst-zondag" class="taak-lijst"></ul></div>
+            </div>
+        </div>
+
+            <h2>🪴 Mijn Huisplanten</h2>
+            <div class="input-groep">
+                <input type="text" id="plantZoekInput" placeholder="Bijv. Monstera, Cactus, Ficus...">
+                <button id="zoekPlantKnop">Plant zoeken</button>
+            </div>
+
+            <div id="plantResultaat" style="margin-top: 20px; background-color: #f8fafc; padding: 20px; border-radius: 12px; display: none;">
+                <h3 id="plantNaam" style="color: #0f172a; margin-bottom: 15px;">Plantnaam</h3>
+                
+                <div class="plant-info-grid">
+                    <div class="plant-badge">
+                        <span style="font-size: 1.2rem;">💧</span> <strong>Water:</strong> <br><span id="plantWaterInfo" style="color: #475569;">-</span>
+                    </div>
+                    <div class="plant-badge">
+                        <span style="font-size: 1.2rem;">☀️</span> <strong>Zonlicht:</strong> <br><span id="plantZonInfo" style="color: #475569;">-</span>
+                    </div>
+                    <div class="plant-badge" style="background-color: #f0fdf4; border-color: #bbf7d0;">
+                        <span style="font-size: 1.2rem;">⏱️</span> <strong style="color: #166534;">Volgende beurt:</strong> <br>
+                        <span id="waterAftelKlok" style="font-family: monospace; font-weight: bold; color: #166534;">00d 00u 00m 00s</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+   <div class="card">
+            <h2>🖼️ Huis & Tuin Moodboard</h2>
+            <div class="input-groep">
+                <input type="file" id="fotoInput" accept="image/*" style="display: none;">
+                <button id="KiesFotoKnop" style="background-color: #64748b;">📷 Kies Foto</button>
+                <span id="bestandsNaam" style="align-self: center; color: #64748b;">Geen bestand gekozen</span>
+
+                <select id="ruimteSelect">
+                    <option value="Woonkamer">🛋️ Woonkamer</option>
+                    <option value="Tuin">🏡 Tuin / Balkon</option>
+                    <option value="Keuken">🍳 Keuken</option>
+                    <option value="Badkamer">🛁 Badkamer</option>
+                    <option value="Slaapkamer Papa & Mama">🛏️ Slaapkamer Papa & Mama</option>
+                    <option value="Slaapkamer Alysha">🧸 Slaapkamer Alysha</option>
+                    <option value="Slaapkamer Ruben">🎮 Slaapkamer Ruben</option>
+                    <option value="Overig">📦 Overig</option>
+                </select>
+
+                <input type="text" id="tagsInput" placeholder="Tags (bijv. Japandi, Shaker, Hout)...">
+                
+                <button id="voegIdeeToeKnop" style="background-color: #10b981;">Inspiratie Opslaan</button>
+            </div>
+
+            <div id="moodboardGalerij" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px;"></div>
+        </div>
+        <div id="bewerkModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                <h3 style="margin-bottom: 20px; color: #1e293b;">📅 Afspraak bewerken</h3>
+                
+                <input type="hidden" id="bewerkId">
+                
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;">Taak / Afspraak</label>
+                <input type="text" id="bewerkTaakInput" style="width: 100%; margin-bottom: 15px;">
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;">Van</label>
+                        <input type="time" id="bewerkTijdInput" style="width: 100%;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;">Tot</label>
+                        <input type="time" id="bewerkEindTijdInput" style="width: 100%;">
+                    </div>
+                </div>
+
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;">Datum</label>
+                <input type="date" id="bewerkDatumInput" style="width: 100%; margin-bottom: 20px;">
+                
+                <div style="display: flex; justify-content: space-between; gap: 10px;">
+                    <button id="sluitModalKnop" style="background-color: #64748b; flex: 1;">Annuleren</button>
+                    <button id="opslaanModalKnop" style="background-color: #10b981; flex: 1;">Opslaan</button>
+                </div>
+            </div>
+        </div>
+    </div> <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
