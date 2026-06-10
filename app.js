@@ -432,14 +432,13 @@ laadPlannerUitCloud();
 
 
 // ==========================================
-// CODE VOOR DE PLANTEN-API & AFTELKLOK
+// CODE VOOR DE LIVE PLANTEN-API & AFTELKLOK
 // ==========================================
-const plantenDatabase = {
-    "monstera": { naam: "Monstera (Gatenplant)", water: "Regelmatig (1x per 7 dagen)", zon: "Veel licht, geen directe zon", dagenTotWater: 7 },
-    "cactus": { naam: "Woestijn Cactus", water: "Weinig (1x per 21 dagen)", zon: "Directe zon, vol in het licht", dagenTotWater: 21 },
-    "ficus": { naam: "Ficus Benjamina", water: "Gemiddeld (1x per 10 dagen)", zon: "Halfschaduw / Licht", dagenTotWater: 10 }
-};
 
+// 1. JOUW PERENUAL API SLEUTEL (Plak hier jouw ontvangen sleutel tussen de aanhalingstekens)
+const PLANT_API_KEY = 'ZET_HIER_JOUW_ONTVANGEN_API_KEY'; 
+
+// 2. HTML-elementen oppakken
 const plantZoekInput = document.getElementById('plantZoekInput');
 const zoekPlantKnop = document.getElementById('zoekPlantKnop');
 const plantResultaatDiv = document.getElementById('plantResultaat');
@@ -447,29 +446,89 @@ const plantNaam = document.getElementById('plantNaam');
 const plantWaterInfo = document.getElementById('plantWaterInfo');
 const plantZonInfo = document.getElementById('plantZonInfo');
 const waterAftelKlok = document.getElementById('waterAftelKlok');
-let timerInterval;
+let timerInterval; 
 
-zoekPlantKnop.addEventListener('click', function() {
+// 3. Luisteren naar de "Plant zoeken" knop
+zoekPlantKnop.addEventListener('click', async function() {
     const zoekTerm = plantZoekInput.value.trim().toLowerCase();
 
-    if (plantenDatabase[zoekTerm]) {
-        const plantData = plantenDatabase[zoekTerm];
-        plantResultaatDiv.style.display = 'block';
-        plantNaam.textContent = plantData.naam;
-        plantWaterInfo.textContent = plantData.water;
-        plantZonInfo.textContent = plantData.zon;
-        startWaterTimer(plantData.dagenTotWater);
-    } else if (zoekTerm === "") {
+    if (zoekTerm === "") {
         alert("Typ eerst een plantennaam in!");
-    } else {
+        return;
+    }
+
+    zoekPlantKnop.textContent = "Zoeken... 🪴";
+    zoekPlantKnop.disabled = true;
+
+    try {
+        // STAP A: Zoek de plant op naam in de database van Perenual
+        const zoekUrl = `https://perenual.com/api/species-list?key=${PLANT_API_KEY}&q=${zoekTerm}`;
+        const antwoord = await fetch(zoekUrl);
+        const resultaat = await antwoord.json();
+
+        // Controleren of er wel een plant is gevonden
+        if (!resultaat.data || resultaat.data.length === 0) {
+            alert(`Geen plant gevonden voor '${zoekTerm}'. Probeer de Engelse of Latijnse naam (bijv. 'Snake plant' of 'Ficus')!`);
+            resethandlerKnop();
+            return;
+        }
+
+        // Pak de allereerste plant uit de zoekresultaten
+        const gevondenPlant = resultaat.data[0];
+        const plantId = gevondenPlant.id;
+
+        // STAP B: Haal de specifieke verzorgingsdetails op met het unieke Plant ID
+        const detailUrl = `https://perenual.com/api/species/details/${plantId}?key=${PLANT_API_KEY}`;
+        const detailAntwoord = await fetch(detailUrl);
+        const plantDetails = await detailAntwoord.json();
+
+        // Toon de resultaten-div op het scherm
         plantResultaatDiv.style.display = 'block';
-        plantNaam.textContent = zoekTerm.charAt(0).toUpperCase() + zoekTerm.slice(1);
-        plantWaterInfo.textContent = "Onbekend (gemiddeld 7 dagen)";
-        plantZonInfo.textContent = "Halfschaduw";
-        startWaterTimer(7);
+
+        // Vul de HTML met de live data uit de API
+        plantNaam.textContent = plantDetails.common_name ? plantDetails.common_name.toUpperCase() : zoekTerm;
+        
+        // Waterbehoefte vertalen of netjes tonen
+        const waterBehoefte = plantDetails.watering || "Regelmatig";
+        plantWaterInfo.textContent = vertaalWaterbehoefte(waterBehoefte);
+
+        // Zonlichtgegevens netjes combineren (vaak een lijstje)
+        const zonLijst = plantDetails.sunlight || ["Halfschaduw"];
+        plantZonInfo.textContent = zonLijst.join(', ');
+
+        // Bepaal de watercyclus in dagen op basis van de API-data (met een veilige fallback)
+        let waterDagen = 7;
+        if (waterBehoefte.toLowerCase().includes('frequent')) waterDagen = 3;
+        if (waterBehoefte.toLowerCase().includes('average')) waterDagen = 7;
+        if (waterBehoefte.toLowerCase().includes('minimum')) waterDagen = 14;
+
+        // Start de live aftelklok!
+        startWaterTimer(waterDagen);
+
+    } catch (fout) {
+        console.error("Er ging iets mis met de Planten-API:", fout);
+        alert("Kon de plantengegevens niet ophalen. Controleer je internetverbinding of API key.");
+    } finally {
+        resethandlerKnop();
     }
 });
 
+// Hulpfunctie om de knop weer normaal te maken
+function resethandlerKnop() {
+    zoekPlantKnop.textContent = "Plant zoeken";
+    zoekPlantKnop.disabled = false;
+}
+
+// Hulpfunctie om de Engelse termen van de API een beetje leuk te vertalen
+function vertaalWaterbehoefte(terme) {
+    const t = terme.toLowerCase();
+    if (t.includes('frequent')) return "Veel water (1x per 3 à 4 dagen)";
+    if (t.includes('average')) return "Gemiddeld (1x per 7 dagen)";
+    if (t.includes('minimum')) return "Weinig water (1x per 14 dagen)";
+    return terme; // Fallback als het iets anders is
+}
+
+// 4. FUNCTIE: De Aftelklok (Blijft ongewijzigd, maar nu gekoppeld aan de API!)
 function startWaterTimer(dagen) {
     clearInterval(timerInterval);
     const doelTijd = new Date().getTime() + (dagen * 24 * 60 * 60 * 1000);
