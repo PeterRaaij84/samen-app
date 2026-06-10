@@ -436,7 +436,7 @@ laadVensterbankUitCloud();
 // CODE VOOR DE LIVE PLANTEN-API & VENSTERBANK
 // ==========================================
 
-const PLANT_API_KEY = 'esk-QwoW6a296461437b218093'; // Jouw Perenual sleutel
+const PLANT_API_KEY = 'sk-QwoW6a296461437b218093'; // Jouw Perenual sleutel
 
 const plantZoekInput = document.getElementById('plantZoekInput');
 const zoekPlantKnop = document.getElementById('zoekPlantKnop');
