@@ -451,7 +451,7 @@ const vensterbankLijst = document.getElementById('vensterbankLijst');
 let tijdelijkePlantData = null;
 let vensterbankTimers = {}; // Object om alle lopende klokjes per plant in te bewaren
 
-// 1. Zoeken naar een plant via de API
+/ 1. Zoeken naar een plant via de API (Geoptimaliseerd voor het gratis abonnement!)
 zoekPlantKnop.addEventListener('click', async function() {
     const zoekTerm = plantZoekInput.value.trim().toLowerCase();
     if (zoekTerm === "") return alert("Typ eerst een plantennaam in!");
@@ -460,8 +460,16 @@ zoekPlantKnop.addEventListener('click', async function() {
     zoekPlantKnop.disabled = true;
 
     try {
+        // We doen nu nog maar 1 verzoek in plaats van 2 achter elkaar!
         const zoekUrl = `https://perenual.com/api/species-list?key=${PLANT_API_KEY}&q=${zoekTerm}`;
         const antwoord = await fetch(zoekUrl);
+        
+        // Als we een 429 fout krijgen, vangen we dat nu netjes op met een duidelijke melding
+        if (antwoord.status === 429) {
+            alert("De planten-database is even overprikkeld (Limiet bereikt). Wacht een minuutje en probeer het nog eens!");
+            return;
+        }
+
         const resultaat = await antwoord.json();
 
         if (!resultaat.data || resultaat.data.length === 0) {
@@ -469,30 +477,31 @@ zoekPlantKnop.addEventListener('click', async function() {
             return;
         }
 
-        const plantId = resultaat.data[0].id;
-        const detailUrl = `https://perenual.com/api/species/details/${plantId}?key=${PLANT_API_KEY}`;
-        const detailAntwoord = await fetch(detailUrl);
-        const plantDetails = await detailAntwoord.json();
+        // We pakken de data direct uit de eerste zoeklijst, hier zit al genoeg in!
+        const gevondenPlant = resultaat.data[0];
 
         plantResultaatDiv.style.display = 'block';
-        const naamMooi = plantDetails.common_name ? plantDetails.common_name.toUpperCase() : zoekTerm;
+        const naamMooi = gevondenPlant.common_name ? gevondenPlant.common_name.toUpperCase() : zoekTerm;
         plantNaam.textContent = naamMooi;
 
-        const waterBehoefte = plantDetails.watering || "Average";
+        // Waterbehoefte zit gelukkig ook in deze kortere lijst
+        const waterBehoefte = gevondenPlant.watering || "Average";
         plantWaterInfo.textContent = vertaalWaterbehoefte(waterBehoefte);
-        plantZonInfo.textContent = (plantDetails.sunlight || ["Halfschaduw"]).join(', ');
+        
+        // Zonlichtgegevens
+        plantZonInfo.textContent = (gevondenPlant.sunlight || ["Halfschaduw"]).join(', ');
 
         let waterDagen = 7;
         if (waterBehoefte.toLowerCase().includes('frequent')) waterDagen = 3;
         if (waterBehoefte.toLowerCase().includes('average')) waterDagen = 7;
         if (waterBehoefte.toLowerCase().includes('minimum')) waterDagen = 14;
 
-        // Sla de gegevens even op in het geheugen voor als men strakjes op 'opslaan' klikt
+        // Sla de gegevens op voor de opslaan-knop
         tijdelijkePlantData = { naam: naamMooi, water_dagen: waterDagen };
 
     } catch (fout) {
         console.error(fout);
-        alert("Fout bij ophalen plantendata.");
+        alert("Er ging iets mis bij het ophalen van de plantendata.");
     } finally {
         zoekPlantKnop.textContent = "Plant zoeken";
         zoekPlantKnop.disabled = false;
