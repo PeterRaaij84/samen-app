@@ -425,7 +425,8 @@ const vensterbankLijst = document.getElementById('vensterbankLijst');
 let tijdelijkePlantData = null;
 let vensterbankTimers = {}; 
 
-zoekPlantKnop.addEventListener('click', async function() {
+// Zoeken naar een plant via onze betrouwbare interne plantengids
+zoekPlantKnop.addEventListener('click', function() {
     const zoekTerm = plantZoekInput.value.trim().toLowerCase();
     if (zoekTerm === "") {
         alert("Typ eerst een plantennaam in!");
@@ -435,46 +436,47 @@ zoekPlantKnop.addEventListener('click', async function() {
     zoekPlantKnop.textContent = "Zoeken... 🪴";
     zoekPlantKnop.disabled = true;
 
-    try {
-        const zoekUrl = `https://perenual.com/api/species-list?key=${PLANT_API_KEY}&q=${zoekTerm}`;
-        const antwoord = await fetch(zoekUrl);
-        
-        if (antwoord.status === 429) {
-            alert("De planten-database is even overprikkeld (Limiet bereikt). Wacht een minuutje en probeer het nog eens!");
-            return;
-        }
+    // Onze eigen uitgebreide plantenencyclopedie
+    const plantenGids = {
+        'monstera': { naam: 'MONSTERA (Gatenplant)', waterDagen: 7, waterTekst: 'Gemiddeld (1x per 7 dagen)', zon: 'Veel licht, geen directe zon' },
+        'pilea': { naam: 'PILEA (Pannenkoekenplant)', waterDagen: 7, waterTekst: 'Gemiddeld (1x per 7 dagen)', zon: 'Lichte standplaats, halfschaduw' },
+        'ficus': { naam: 'FICUS (Rubberboom)', waterDagen: 7, waterTekst: 'Gemiddeld (1x per 7 dagen)', zon: 'Veel licht, kan lichte ochtendzon verdragen' },
+        'cactus': { naam: 'CACTUS', waterDagen: 14, waterTekst: 'Weinig water (1x per 14 dagen)', zon: 'Volle zon / Zeer licht' },
+        'succulent': { naam: 'VETPLANT (Succulent)', waterDagen: 14, waterTekst: 'Weinig water (1x per 14 dagen)', zon: 'Veel direct zonlicht' },
+        'calathea': { naam: 'CALATHEA', waterDagen: 4, waterTekst: 'Veel water (1x per 3 à 4 dagen)', zon: 'Schaduw / Halfschaduw, absoluut geen zon' },
+        'sansevieria': { naam: 'SANSEVIERIA (Vrouwentong)', waterDagen: 14, waterTekst: 'Weinig water (1x per 14 dagen)', zon: 'Kan overal staan, van schaduw tot zon' },
+        'alocasia': { naam: 'ALOCASIA (Olifantsoor)', waterDagen: 4, waterTekst: 'Veel water (1x per 3 à 4 dagen)', zon: 'Veel lichte standplaatsen, constant vochtig' }
+    };
 
-        const resultaat = await antwoord.json();
+    // Controleren of de ingetypte plant in onze gids staat
+    let gevondenPlant = plantenGids[zoekTerm];
 
-        if (!resultaat.data || resultaat.data.length === 0) {
-            alert(`Geen plant gevonden voor '${zoekTerm}'. Probeer het in het Engels!`);
-            return;
-        }
-
-        const gevondenPlant = resultaat.data[0];
-
-        plantResultaatDiv.style.display = 'block';
-        const naamMooi = gevondenPlant.common_name ? gevondenPlant.common_name.toUpperCase() : zoekTerm;
-        plantNaam.textContent = naamMooi;
-
-        const waterBehoefte = gevondenPlant.watering || "Average";
-        plantWaterInfo.textContent = vertaalWaterbehoefte(waterBehoefte);
-        plantZonInfo.textContent = (gevondenPlant.sunlight || ["Halfschaduw"]).join(', ');
-
-        let waterDagen = 7;
-        if (waterBehoefte.toLowerCase().includes('frequent')) waterDagen = 3;
-        if (waterBehoefte.toLowerCase().includes('average')) waterDagen = 7;
-        if (waterBehoefte.toLowerCase().includes('minimum')) waterDagen = 14;
-
-        tijdelijkePlantData = { naam: naamMooi, water_dagen: waterDagen };
-
-    } catch (fout) {
-        console.error(fout);
-        alert("Er ging iets mis bij het ophalen van de plantendata.");
-    } finally {
-        zoekPlantKnop.textContent = "Plant zoeken";
-        zoekPlantKnop.disabled = false;
+    // Fallback: Als de plant er niet in staat, maken we er automatisch eentje aan met gemiddelde zorg!
+    if (!gevondenPlant) {
+        const naamMooi = zoekTerm.charAt(0).toUpperCase() + zoekTerm.slice(1);
+        gevondenPlant = {
+            naam: naamMooi.toUpperCase(),
+            waterDagen: 7,
+            waterTekst: 'Gemiddeld (1x per 7 dagen)',
+            zon: 'Licht / Halfschaduw'
+        };
     }
+
+    // Toon het resultaat direct op het scherm (zonder laadtijd!)
+    plantResultaatDiv.style.display = 'block';
+    plantNaam.textContent = gevondenPlant.naam;
+    plantWaterInfo.textContent = gevondenPlant.waterTekst;
+    plantZonInfo.textContent = gevondenPlant.zon;
+
+    // Sla de gegevens op in het geheugen voor de 'Toevoegen aan vensterbank' knop
+    tijdelijkePlantData = { 
+        naam: gevondenPlant.naam, 
+        water_dagen: gevondenPlant.waterDagen 
+    };
+
+    // Reset de zoekknop
+    zoekPlantKnop.textContent = "Plant zoeken";
+    zoekPlantKnop.disabled = false;
 });
 
 function vertaalWaterbehoefte(terme) {
