@@ -411,7 +411,7 @@ supabaseClient
 // 4. CODE VOOR DE LIVE PLANTEN-API & VENSTERBANK
 // ==========================================
 
-const PLANT_API_KEY = 'sk-QwoW6a296461437b218093'; 
+const PLANT_API_KEY = 'sk-Xu3I6a2a878f69ade18093'; 
 
 const plantZoekInput = document.getElementById('plantZoekInput');
 const zoekPlantKnop = document.getElementById('zoekPlantKnop');
