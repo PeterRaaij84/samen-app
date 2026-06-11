@@ -119,7 +119,6 @@ supabaseClient
 // 3. CODE VOOR DE KALENDER & WEEKPLANNER
 // ==========================================
 
-// HTML-elementen oppakken
 const taakInput = document.getElementById('taakInput');
 const tijdInput = document.getElementById('tijdInput');
 const eindTijdInput = document.getElementById('eindTijdInput');
@@ -131,7 +130,6 @@ const weekTitel = document.getElementById('weekTitel');
 const vorigeWeekKnop = document.getElementById('vorigeWeekKnop');
 const volgendeWeekKnop = document.getElementById('volgendeWeekKnop');
 
-// Elementen voor de Bewerk-Pop-up (Modal)
 const bewerkModal = document.getElementById('bewerkModal');
 const bewerkId = document.getElementById('bewerkId');
 const bewerkTaakInput = document.getElementById('bewerkTaakInput');
@@ -237,7 +235,7 @@ function maakNieuwPlannerItem(id, tekst, dagNaam, persoon, kleur, vanTijd, totTi
     taakElement.style.borderRadius = '8px';
     taakElement.style.position = 'relative';
     taakElement.style.listStyle = 'none';
-    taakElement.style.cursor = 'pointer'; // Handje tonen bij hoveren
+    taakElement.style.cursor = 'pointer'; 
     taakElement.setAttribute('data-id', id);
     taakElement.setAttribute('data-datum', exacteDatum);
     taakElement.setAttribute('data-tekst', tekst);
@@ -263,7 +261,6 @@ function maakNieuwPlannerItem(id, tekst, dagNaam, persoon, kleur, vanTijd, totTi
     dagLijst.appendChild(taakElement);
 }
 
-// Invoeren nieuwe taak (Nu met wekelijkse herhaling!)
 plannerKnop.addEventListener('click', function() {
     const tekst = taakInput.value.trim();
     const gekozenDatumString = datumInput.value; 
@@ -271,33 +268,25 @@ plannerKnop.addEventListener('click', function() {
     const vanTijd = tijdInput.value;
     const totTijd = eindTijdInput.value;
     const kleur = kleurMappen[persoon] || '#777777';
-    const moetHerhalen = document.getElementById('herhaalCheckbox').checked; // NIEUW
+    const moetHerhalen = document.getElementById('herhaalCheckbox').checked; 
 
     if (tekst === "" || gekozenDatumString === "") {
         alert("Vul een taak in én kies een datum!");
         return;
     }
 
-    // Array om alle rijen in te verzamelen die we gaan opslaan
     let takenOmOpTeSlaan = [];
-    
-    // We bepalen hoeveel weken we vooruit schrijven (1 eenmalig, of 12 weken bij herhaling)
     const aantalWeken = moetHerhalen ? 12 : 1;
-    
     let basisDatum = new Date(gekozenDatumString);
     const dagenNamen = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
 
     for (let i = 0; i < aantalWeken; i++) {
-        // Formateer de datum netjes als JJJJ-MM-DD voor Supabase
         const jaar = basisDatum.getFullYear();
         const maand = String(basisDatum.getMonth() + 1).padStart(2, '0');
         const dagNr = String(basisDatum.getDate()).padStart(2, '0');
         const loopDatumString = `${jaar}-${maand}-${dagNr}`;
-        
-        // Bepaal de dagnaam (maandag, dinsdag, etc.)
         const dagNaam = dagenNamen[basisDatum.getDay()];
 
-        // Voeg dit item toe aan onze verzamellijst
         takenOmOpTeSlaan.push({
             tekst: tekst,
             datum: loopDatumString,
@@ -308,11 +297,9 @@ plannerKnop.addEventListener('click', function() {
             eindtijd: totTijd
         });
 
-        // Belangrijk: Tel 7 dagen op bij de datum voor de volgende ronde in de loop!
         basisDatum.setDate(basisDatum.getDate() + 7);
     }
 
-    // Stuur de hele lijst in één keer (bulk-insert) naar Supabase!
     supabaseClient
         .from('planner')
         .insert(takenOmOpTeSlaan)
@@ -322,11 +309,7 @@ plannerKnop.addEventListener('click', function() {
                 console.error("Fout bij opslaan herhalende taak:", result.error);
                 alert("Er ging iets mis bij het opslaan.");
             } else {
-                // Herlaad de planner op het scherm, zodat de taak direct zichtbaar is 
-                // als de gekozen datum in de huidige week viel
                 laadPlannerUitCloud();
-                
-                // Formulier leegmaken en checkbox resetten
                 taakInput.value = "";
                 tijdInput.value = "";
                 eindTijdInput.value = "";
@@ -335,38 +318,41 @@ plannerKnop.addEventListener('click', function() {
         });
 });
 
-// NIEUW: Klikken in de week-container (Wissen óf Bewerken openen)
+vorigeWeekKnop.addEventListener('click', function() {
+    huidigeMaandag.setDate(huidigeMaandag.getDate() - 7);
+    laadPlannerUitCloud();
+});
+
+volgendeWeekKnop.addEventListener('click', function() {
+    huidigeMaandag.setDate(huidigeMaandag.getDate() + 7);
+    laadPlannerUitCloud();
+});
+
 document.querySelector('.week-container').addEventListener('click', async function(event) {
-    // Geval A: Er is op het kruisje geklikt (Wissen)
     if (event.target.classList.contains('wis-taak-btn')) {
-        event.stopPropagation(); // Voorkom dat ook het bewerkscherm opent
+        event.stopPropagation(); 
         const taakElement = event.target.closest('.planner-item');
         const databaseId = taakElement.getAttribute('data-id');
 
         const { error } = await supabaseClient.from('planner').delete().eq('id', databaseId);
         if (!error) taakElement.remove();
     } 
-    // Geval B: Er is op de taak zelf geklikt (Bewerken openen)
     else {
         const taakElement = event.target.closest('.planner-item');
         if (!taakElement) return;
 
-        // Gegevens uit het element lezen en in de pop-up stoppen
         bewerkId.value = taakElement.getAttribute('data-id');
         bewerkTaakInput.value = taakElement.getAttribute('data-tekst');
         bewerkTijdInput.value = taakElement.getAttribute('data-tijd');
-        bewerkEindTijdInput.value = taakElement.getAttribute('data-einditjd') || taakElement.getAttribute('data-eindtijd');
+        bewerkEindTijdInput.value = taakElement.getAttribute('data-eindtijd');
         bewerkDatumInput.value = taakElement.getAttribute('data-datum');
 
-        // Toon het bewerkscherm
         bewerkModal.style.display = 'flex';
     }
 });
 
-// Sluitknop van pop-up
 sluitModalKnop.addEventListener('click', () => { bewerkModal.style.display = 'none'; });
 
-// Opslaan-knop in de pop-up
 opslaanModalKnop.addEventListener('click', async function() {
     const id = bewerkId.value;
     const nieuweTekst = bewerkTaakInput.value.trim();
@@ -394,15 +380,13 @@ opslaanModalKnop.addEventListener('click', async function() {
         console.error(error);
     } else {
         bewerkModal.style.display = 'none';
-        laadPlannerUitCloud(); // Ververs het overzicht direct lokaal
+        laadPlannerUitCloud(); 
     }
 });
 
-// REALTIME KALENDER SYNCHRONISATIE (Aangevuld met UPDATE)
 supabaseClient
     .channel('planner-wijzigingen')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'planner' }, (payload) => {
-        // Iemand voegt iets toe
         if (payload.eventType === 'INSERT') {
             const n = payload.new;
             if (n.datum >= weekDatums['maandag'] && n.datum <= weekDatums['zondag']) {
@@ -413,30 +397,20 @@ supabaseClient
                 }
             }
         }
-        // NIEUW: Iemand past een taak aan (Herlaad de week om verspringen/verplaatsen op te vangen)
         if (payload.eventType === 'UPDATE') {
             laadPlannerUitCloud(); 
         }
-        // Iemand wist iets
         if (payload.eventType === 'DELETE') {
             const schermItem = document.querySelector(`.planner-item[data-id="${payload.old.id}"]`);
             if (schermItem) schermItem.remove();
         }
     }).subscribe();
 
-// ==========================================
-// 4. INITIALISATIE (STARTPUNTEN)
-// ==========================================
-laadBoodschappenUitCloud();
-laadPlannerUitCloud();
-laadVensterbankUitCloud();
-
 
 // ==========================================
-// CODE VOOR DE LIVE PLANTEN-API & VENSTERBANK
+// 4. CODE VOOR DE LIVE PLANTEN-API & VENSTERBANK
 // ==========================================
 
-// 1. Vul hier je Perenual sleutel in (begint met sk-)
 const PLANT_API_KEY = 'sk-QwoW6a296461437b218093'; 
 
 const plantZoekInput = document.getElementById('plantZoekInput');
@@ -451,7 +425,6 @@ const vensterbankLijst = document.getElementById('vensterbankLijst');
 let tijdelijkePlantData = null;
 let vensterbankTimers = {}; 
 
-// Zoeken naar een plant via de API (Geoptimaliseerde single-request versie)
 zoekPlantKnop.addEventListener('click', async function() {
     const zoekTerm = plantZoekInput.value.trim().toLowerCase();
     if (zoekTerm === "") {
@@ -512,7 +485,6 @@ function vertaalWaterbehoefte(terme) {
     return terme;
 }
 
-// Klikken op de knop "Toevoegen aan mijn vensterbank"
 opslaanPlantKnop.addEventListener('click', function() {
     if (!tijdelijkePlantData) return;
 
@@ -538,7 +510,6 @@ opslaanPlantKnop.addEventListener('click', function() {
         });
 });
 
-// Haal de opgeslagen planten op uit de cloud
 async function laadVensterbankUitCloud() {
     Object.values(vensterbankTimers).forEach(t => clearInterval(t));
     vensterbankTimers = {};
@@ -561,7 +532,6 @@ async function laadVensterbankUitCloud() {
     }
 }
 
-// Bouw een visueel kaartje voor de vensterbank
 function maakVensterbankCard(id, naam, waterDagen, laatstWaterString) {
     const card = document.createElement('div');
     card.className = 'plant-badge';
@@ -605,7 +575,6 @@ function maakVensterbankCard(id, naam, waterDagen, laatstWaterString) {
     }, 1000);
 }
 
-// Knoppen op de kaarten bedienen (Water geven of Plant weggooien)
 vensterbankLijst.addEventListener('click', async function(event) {
     const card = event.target.closest('.plant-badge');
     if (!card) return;
@@ -634,7 +603,6 @@ vensterbankLijst.addEventListener('click', async function(event) {
     }
 });
 
-// REALTIME SYNCHRONISATIE VOOR DE VENSTERBANK
 supabaseClient
     .channel('vensterbank-wijzigingen')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'mijn_planten' }, (payload) => {
@@ -650,8 +618,9 @@ supabaseClient
         }
     }).subscribe();
 
+
 // ==========================================
-// CODE VOOR HET MOODBOARD (LOKALE PREVIEW)
+// 5. CODE VOOR HET MOODBOARD (LOKALE PREVIEW)
 // ==========================================
 const fotoInput = document.getElementById('fotoInput');
 const kiesFotoKnop = document.getElementById('KiesFotoKnop');
@@ -735,3 +704,11 @@ voegIdeeToeKnop.addEventListener('click', function() {
     geselecteerdeFotoUrl = "";
     fotoInput.value = "";
 });
+
+
+// ==========================================
+// 6. INITIALISATIE (STARTPUNTEN - HELEMAAL ONDERAAN)
+// ==========================================
+laadBoodschappenUitCloud();
+laadPlannerUitCloud();
+laadVensterbankUitCloud();
