@@ -118,7 +118,6 @@ supabaseClient
 // ==========================================
 // 3. CODE VOOR DE KALENDER & WEEKPLANNER
 // ==========================================
-
 const taakInput = document.getElementById('taakInput');
 const tijdInput = document.getElementById('tijdInput');
 const eindTijdInput = document.getElementById('eindTijdInput');
@@ -408,11 +407,8 @@ supabaseClient
 
 
 // ==========================================
-// 4. CODE VOOR DE LIVE PLANTEN-API & VENSTERBANK
+// 4. CODE VOOR DE LIVE PLANTEN-API & VENSTERBANK (NU MET FOTO & ZON)
 // ==========================================
-
-const PLANT_API_KEY = 'sk-Xu3I6a2a878f69ade18093'; 
-
 const plantZoekInput = document.getElementById('plantZoekInput');
 const zoekPlantKnop = document.getElementById('zoekPlantKnop');
 const plantResultaatDiv = document.getElementById('plantResultaat');
@@ -425,7 +421,7 @@ const vensterbankLijst = document.getElementById('vensterbankLijst');
 let tijdelijkePlantData = null;
 let vensterbankTimers = {}; 
 
-// Zoeken naar een plant via onze betrouwbare interne plantengids
+// Zoeken naar een plant via onze uitgebreide interne plantengids
 zoekPlantKnop.addEventListener('click', function() {
     const zoekTerm = plantZoekInput.value.trim().toLowerCase();
     if (zoekTerm === "") {
@@ -436,57 +432,98 @@ zoekPlantKnop.addEventListener('click', function() {
     zoekPlantKnop.textContent = "Zoeken... 🪴";
     zoekPlantKnop.disabled = true;
 
-    // Onze eigen uitgebreide plantenencyclopedie
+    // Onze eigen uitgebreide plantenencyclopedie inclusief prachtige foto's!
     const plantenGids = {
-        'monstera': { naam: 'MONSTERA (Gatenplant)', waterDagen: 7, waterTekst: 'Gemiddeld (1x per 7 dagen)', zon: 'Veel licht, geen directe zon' },
-        'pilea': { naam: 'PILEA (Pannenkoekenplant)', waterDagen: 7, waterTekst: 'Gemiddeld (1x per 7 dagen)', zon: 'Lichte standplaats, halfschaduw' },
-        'ficus': { naam: 'FICUS (Rubberboom)', waterDagen: 7, waterTekst: 'Gemiddeld (1x per 7 dagen)', zon: 'Veel licht, kan lichte ochtendzon verdragen' },
-        'cactus': { naam: 'CACTUS', waterDagen: 14, waterTekst: 'Weinig water (1x per 14 dagen)', zon: 'Volle zon / Zeer licht' },
-        'succulent': { naam: 'VETPLANT (Succulent)', waterDagen: 14, waterTekst: 'Weinig water (1x per 14 dagen)', zon: 'Veel direct zonlicht' },
-        'calathea': { naam: 'CALATHEA', waterDagen: 4, waterTekst: 'Veel water (1x per 3 à 4 dagen)', zon: 'Schaduw / Halfschaduw, absoluut geen zon' },
-        'sansevieria': { naam: 'SANSEVIERIA (Vrouwentong)', waterDagen: 14, waterTekst: 'Weinig water (1x per 14 dagen)', zon: 'Kan overal staan, van schaduw tot zon' },
-        'alocasia': { naam: 'ALOCASIA (Olifantsoor)', waterDagen: 4, waterTekst: 'Veel water (1x per 3 à 4 dagen)', zon: 'Veel lichte standplaatsen, constant vochtig' }
+        'monstera': { 
+            naam: 'MONSTERA (Gatenplant)', 
+            waterDagen: 7, 
+            waterTekst: 'Gemiddeld (1x per 7 dagen)', 
+            zon: 'Veel licht, geen directe zon',
+            foto: 'https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=400&auto=format&fit=crop&q=60'
+        },
+        'pilea': { 
+            naam: 'PILEA (Pannenkoekenplant)', 
+            waterDagen: 7, 
+            waterTekst: 'Gemiddeld (1x per 7 dagen)', 
+            zon: 'Lichte standplaats, halfschaduw',
+            foto: 'https://images.unsplash.com/photo-1616844855423-f22778da51f8?w=400&auto=format&fit=crop&q=60'
+        },
+        'ficus': { 
+            naam: 'FICUS (Rubberboom)', 
+            waterDagen: 7, 
+            waterTekst: 'Gemiddeld (1x per 7 dagen)', 
+            zon: 'Veel licht, kan ochtendzon verdragen',
+            foto: 'https://images.unsplash.com/photo-1596547609652-9cf5d8d76921?w=400&auto=format&fit=crop&q=60'
+        },
+        'cactus': { 
+            naam: 'CACTUS', 
+            waterDagen: 14, 
+            waterTekst: 'Weinig water (1x per 14 dagen)', 
+            zon: 'Volle zon / Zeer licht',
+            foto: 'https://images.unsplash.com/photo-1551893478-d726eaf0442c?w=400&auto=format&fit=crop&q=60'
+        },
+        'succulent': { 
+            naam: 'VETPLANT (Succulent)', 
+            waterDagen: 14, 
+            waterTekst: 'Weinig water (1x per 14 dagen)', 
+            zon: 'Veel direct zonlicht',
+            foto: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=60'
+        },
+        'calathea': { 
+            naam: 'CALATHEA', 
+            waterDagen: 4, 
+            waterTekst: 'Veel water (1x per 3 à 4 dagen)', 
+            zon: 'Schaduw / Halfschaduw, geen felle zon',
+            foto: 'https://images.unsplash.com/photo-1545167622-3a6ac756afa4?w=400&auto=format&fit=crop&q=60'
+        },
+        'sansevieria': { 
+            naam: 'SANSEVIERIA (Vrouwentong)', 
+            waterDagen: 14, 
+            waterTekst: 'Weinig water (1x per 14 dagen)', 
+            zon: 'Kan overal staan, van schaduw tot zon',
+            foto: 'https://images.unsplash.com/photo-1620134017324-f7b587b1c1dc?w=400&auto=format&fit=crop&q=60'
+        },
+        'alocasia': { 
+            naam: 'ALOCASIA (Olifantsoor)', 
+            waterDagen: 4, 
+            waterTekst: 'Veel water (1x per 3 à 4 dagen)', 
+            zon: 'Veel licht, grond constant licht vochtig',
+            foto: 'https://images.unsplash.com/photo-1600181516264-3ea807ff44b9?w=400&auto=format&fit=crop&q=60'
+        }
     };
 
-    // Controleren of de ingetypte plant in onze gids staat
     let gevondenPlant = plantenGids[zoekTerm];
 
-    // Fallback: Als de plant er niet in staat, maken we er automatisch eentje aan met gemiddelde zorg!
+    // Universele fallback voor onbekende planten
     if (!gevondenPlant) {
         const naamMooi = zoekTerm.charAt(0).toUpperCase() + zoekTerm.slice(1);
         gevondenPlant = {
             naam: naamMooi.toUpperCase(),
             waterDagen: 7,
             waterTekst: 'Gemiddeld (1x per 7 dagen)',
-            zon: 'Licht / Halfschaduw'
+            zon: 'Licht / Halfschaduw',
+            foto: 'https://images.unsplash.com/photo-1463936575829-25148e1db1b8?w=400&auto=format&fit=crop&q=60' // Algemene plantenafbeelding
         };
     }
 
-    // Toon het resultaat direct op het scherm (zonder laadtijd!)
     plantResultaatDiv.style.display = 'block';
     plantNaam.textContent = gevondenPlant.naam;
     plantWaterInfo.textContent = gevondenPlant.waterTekst;
     plantZonInfo.textContent = gevondenPlant.zon;
 
-    // Sla de gegevens op in het geheugen voor de 'Toevoegen aan vensterbank' knop
+    // We slaan nu ook de zonlicht-data en foto-url op in het tijdelijke geheugen
     tijdelijkePlantData = { 
         naam: gevondenPlant.naam, 
-        water_dagen: gevondenPlant.waterDagen 
+        water_dagen: gevondenPlant.waterDagen,
+        zonlicht: gevondenPlant.zon,
+        foto_url: gevondenPlant.foto
     };
 
-    // Reset de zoekknop
     zoekPlantKnop.textContent = "Plant zoeken";
     zoekPlantKnop.disabled = false;
 });
 
-function vertaalWaterbehoefte(terme) {
-    const t = terme.toLowerCase();
-    if (t.includes('frequent')) return "Veel water (1x per 3 à 4 dagen)";
-    if (t.includes('average')) return "Gemiddeld (1x per 7 dagen)";
-    if (t.includes('minimum')) return "Weinig water (1x per 14 dagen)";
-    return terme;
-}
-
+// Toevoegen aan Vensterbank (Nu inclusief extra kolommen!)
 opslaanPlantKnop.addEventListener('click', function() {
     if (!tijdelijkePlantData) return;
 
@@ -497,7 +534,9 @@ opslaanPlantKnop.addEventListener('click', function() {
         .insert([{
             naam: tijdelijkePlantData.naam,
             water_dagen: tijdelijkePlantData.water_dagen,
-            laatst_water: vandaagString
+            laatst_water: vandaagString,
+            zonlicht: tijdelijkePlantData.zonlicht, // NIEUW
+            foto_url: tijdelijkePlantData.foto_url   // NIEUW
         }])
         .select()
         .then(result => {
@@ -529,27 +568,43 @@ async function laadVensterbankUitCloud() {
 
     if (data) {
         data.forEach(plant => {
-            maakVensterbankCard(plant.id, plant.naam, plant.water_dagen, plant.laatst_water);
+            // We sturen nu ook zonlicht en de foto mee naar de kaartjesmaker
+            maakVensterbankCard(plant.id, plant.naam, plant.water_dagen, plant.laatst_water, plant.zonlicht, plant.foto_url);
         });
     }
 }
 
-function maakVensterbankCard(id, naam, waterDagen, laatstWaterString) {
+// Kaartjesmaker met mooie foto en zon-icoon
+function maakVensterbankCard(id, naam, waterDagen, laatstWaterString, zonlicht, fotoUrl) {
     const card = document.createElement('div');
     card.className = 'plant-badge';
     card.style.background = 'white';
     card.style.position = 'relative';
+    card.style.borderRadius = '12px';
+    card.style.overflow = 'hidden'; // Zorgt dat de foto mooi binnen de hoeken blijft
+    card.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05)';
     card.setAttribute('data-id', id);
 
+    // Standaardafbeelding als er op de een of andere manier geen foto is meegeleverd
+    const veiligeFoto = fotoUrl || 'https://images.unsplash.com/photo-1463936575829-25148e1db1b8?w=400';
+    const veiligZonlicht = zonlicht || 'Licht / Halfschaduw';
+
     card.innerHTML = `
-        <h4 style="color: #1e293b; margin-bottom: 5px;">${naam}</h4>
-        <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 10px;">Cyclus: elke ${waterDagen} dagen</div>
-        <div style="font-size: 0.9rem; margin-bottom: 15px;">
-            💧 Gietklok: <span class="aftel-klok" style="font-weight: bold; font-family: monospace;">Berekenen...</span>
-        </div>
-        <div style="display: flex; gap: 5px;">
-            <button class="water-geef-btn" style="background-color: #3b82f6; padding: 6px 12px; font-size: 0.85rem; flex: 1;">Give water 💧</button>
-            <button class="plant-wis-btn" style="background-color: transparent; color: #94a3b8; padding: 6px; font-size: 0.85rem;">🗑️</button>
+        <img src="${veiligeFoto}" alt="${naam}" style="width: 100%; height: 140px; object-fit: crop; display: block;">
+        
+        <div style="padding: 15px;">
+            <h4 style="color: #1e293b; margin-bottom: 5px; font-size: 1.05rem;">${naam}</h4>
+            <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; gap: 4px;">
+                ☀️ <span>${veiligZonlicht}</span>
+            </div>
+            <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">Cyclus: elke ${waterDagen} dagen</div>
+            <div style="font-size: 0.9rem; margin-bottom: 15px; background: #f0fdf4; padding: 8px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                💧 Gietklok: <span class="aftel-klok" style="font-weight: bold; font-family: monospace;">Berekenen...</span>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button class="water-geef-btn" style="background-color: #3b82f6; padding: 6px 12px; font-size: 0.85rem; flex: 1; border-radius: 6px;">Give water 💧</button>
+                <button class="plant-wis-btn" style="background-color: transparent; color: #94a3b8; padding: 6px; font-size: 0.85rem; border: none; cursor: pointer;">🗑️</button>
+            </div>
         </div>
     `;
 
@@ -576,50 +631,6 @@ function maakVensterbankCard(id, naam, waterDagen, laatstWaterString) {
         }
     }, 1000);
 }
-
-vensterbankLijst.addEventListener('click', async function(event) {
-    const card = event.target.closest('.plant-badge');
-    if (!card) return;
-    const id = card.getAttribute('data-id');
-
-    if (event.target.classList.contains('water-geef-btn')) {
-        const vandaagString = new Date().toISOString().split('T')[0];
-        const { error } = await supabaseClient
-            .from('mijn_planten')
-            .update({ laatst_water: vandaagString })
-            .eq('id', id);
-
-        if (!error) laadVensterbankUitCloud(); 
-    }
-
-    if (event.target.classList.contains('plant-wis-btn')) {
-        const { error } = await supabaseClient
-            .from('mijn_planten')
-            .delete()
-            .eq('id', id);
-
-        if (!error) {
-            clearInterval(vensterbankTimers[id]);
-            card.remove();
-        }
-    }
-});
-
-supabaseClient
-    .channel('vensterbank-wijzigingen')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'mijn_planten' }, (payload) => {
-        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            laadVensterbankUitCloud();
-        }
-        if (payload.eventType === 'DELETE') {
-            const schermItem = document.querySelector(`.plant-badge[data-id="${payload.old.id}"]`);
-            if (schermItem) {
-                clearInterval(vensterbankTimers[payload.old.id]);
-                schermItem.remove();
-            }
-        }
-    }).subscribe();
-
 
 // ==========================================
 // 5. CODE VOOR HET MOODBOARD (LOKALE PREVIEW)
